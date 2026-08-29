@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="50%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="glow-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="sun-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <!-- Background with rounded iOS squircle shape -->
+  <rect width="512" height="512" rx="115" fill="url(#bg-grad)" />
+
+  <!-- Outer subtle glow ring -->
+  <rect x="12" y="12" width="488" height="488" rx="105" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2.5" />
+
+  <!-- Morning Sun & Commute Ray Elements -->
+  <g transform="translate(256, 220)" filter="url(#shadow)">
+    <!-- Metro / Train Icon -->
+    <rect x="-85" y="-70" width="170" height="200" rx="36" fill="url(#glow-grad)" />
+    
+    <!-- Train windshield -->
+    <rect x="-65" y="-50" width="130" height="70" rx="16" fill="#0f172a" />
+    <path d="M-40,-35 L-10,-35" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" opacity="0.8" />
+    <path d="M10,-35 L40,-35" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" opacity="0.8" />
+    
+    <!-- Train Headlights -->
+    <circle cx="-45" cy="55" r="14" fill="#fef08a" />
+    <circle cx="45" cy="55" r="14" fill="#fef08a" />
+    <circle cx="0" cy="55" r="7" fill="#ffffff" opacity="0.8" />
+
+    <!-- Train track line -->
+    <rect x="-70" y="90" width="140" height="8" rx="4" fill="#94a3b8" />
+    <circle cx="-35" cy="115" r="8" fill="#64748b" />
+    <circle cx="35" cy="115" r="8" fill="#64748b" />
+  </g>
+
+  <!-- Sun Emblem top-right -->
+  <circle cx="380" cy="130" r="42" fill="url(#sun-grad)" filter="url(#shadow)" />
+  <circle cx="380" cy="130" r="50" fill="none" stroke="#fbbf24" stroke-width="3" stroke-dasharray="6,6" opacity="0.8" />
+
+  <!-- Smart Home Light Flash top-left -->
+  <g transform="translate(130, 130)">
+    <circle cx="0" cy="0" r="28" fill="#10b981" opacity="0.2" />
+    <path d="M0 -18 L4 -5 L17 -5 L6 3 L10 16 L0 8 L-10 16 L-6 3 L-17 -5 L-4 -5 Z" fill="#34d399" />
+  </g>
+</svg>
