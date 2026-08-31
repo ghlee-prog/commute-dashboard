@@ -15,7 +15,7 @@ GOAL_COORDS = "126.9688,37.3975"
 
 import os
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, ZoneInfo
 from typing import Optional, Dict, Any, List
 
 import httpx
