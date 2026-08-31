@@ -5,12 +5,12 @@ NAVER_CLIENT_ID = "trcf5mo8a4"
 NAVER_CLIENT_SECRET = "4HLRLKltzNljArWBKfmQShKRD64roNJOKDwUxdHC"
 
 # 정확한 출발지 및 도착지 좌표 하드코딩 (경도,위도 / X,Y 형식)
-# 출발지: 경기 광주시 더샵오포센트리체 정문 인근 (127.2255, 37.3663)
-START_ADDRESS = "경기 광주시 더샵오포센트리체 (정문)"
+# 출발지: 경기 광주시 더샵오포센트리체 인근 (127.2255, 37.3663)
+START_ADDRESS = "경기 광주시 더샵오포센트리체"
 START_COORDS = "127.2255,37.3663"
 
-# 도착지: 경기 안양시 안양메가밸리 입구 (126.9688, 37.3975)
-GOAL_ADDRESS = "경기 안양시 안양메가밸리 (입구)"
+# 도착지: 경기 안양시 안양메가밸리 (126.9688, 37.3975)
+GOAL_ADDRESS = "경기 안양시 안양메가밸리"
 GOAL_COORDS = "126.9688,37.3975"
 
 import os
