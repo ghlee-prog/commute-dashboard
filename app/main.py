@@ -90,7 +90,7 @@ async def call_naver_direction5_api(
         "option": "traoptimal"
     }
 
-    url = "https://naveropenapi.apigw.ntruss.com/map-direction/v5/driving"
+    url = "https://naveropenapi.apigw.ntruss.com/map-direction15/v1/driving"
 
     try:
         async with httpx.AsyncClient(timeout=4.0) as client:
