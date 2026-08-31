@@ -82,12 +82,12 @@ async def call_naver_direction5_api(
         "x-ncp-apigw-api-key": NAVER_CLIENT_SECRET.strip()
     }
     
-    # URL 파라미터: option=trafast 고정 및 waypoints 추가 (세종포천고속도로 본선)
+    # URL 파라미터: option=traoptimal 고정 및 waypoints 추가 (오포IC 포천방향 진입)
     params = {
         "start": start,
-        "waypoints": "127.2462,37.3735",
+        "waypoints": "127.2305,37.3635",
         "goal": goal,
-        "option": "trafast"
+        "option": "traoptimal"
     }
 
     url = "https://naveropenapi.apigw.ntruss.com/map-direction/v5/driving"
