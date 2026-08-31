@@ -85,7 +85,7 @@ async def call_naver_direction5_api(
     # URL 파라미터: option=traoptimal 고정 및 waypoints 추가 (오포IC 포천방향 진입)
     params = {
         "start": start,
-        "waypoints": "127.2305,37.3635",
+        "waypoints": "127.2307,37.3636",
         "goal": goal,
         "option": "traoptimal"
     }
