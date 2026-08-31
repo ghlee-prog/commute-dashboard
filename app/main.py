@@ -82,19 +82,50 @@ async def call_naver_direction5_api(
         "x-ncp-apigw-api-key": NAVER_CLIENT_SECRET.strip()
     }
     
-    # URL 파라미터: option=traoptimal 고정 및 waypoints 추가 (오포IC 포천방향 진입)
-    params = {
-        "start": start,
-        "waypoints": "127.2307,37.3636",
-        "goal": goal,
-        "option": "traoptimal"
+    # TMAP 자동차 경로안내 API 호출 (버전 1) - 오포IC 경유
+    wp_lon, wp_lat = 127.2307, 37.3636
+    url = "https://apis.openapi.sk.com/tmap/routes?version=1"
+    headers = {
+        "appKey": "YYpRf6pN1E49SVLkEuXuLJmHTKpt0h05wqOM6vI4",
+        "Content-Type": "application/json",
     }
-
-    url = "https://naveropenapi.apigw.ntruss.com/map-direction15/v1/driving"
-
+    body = {
+        "startX": float(start.split(',')[0]),
+        "startY": float(start.split(',')[1]),
+        "endX": float(goal.split(',')[0]),
+        "endY": float(goal.split(',')[1]),
+        "passList": f"{wp_lon},{wp_lat}",
+        "reqCoordType": "WGS84GEO",
+        "resCoordType": "WGS84GEO",
+        "searchOption": 0,
+    }
     try:
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            response = await client.get(url, headers=headers, params=params)
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            response = await client.post(url, headers=headers, json=body)
+            if response.status_code == 200:
+                data = response.json()
+                total_time_sec = data.get("totalTime")
+                total_fare = data.get("totalFare")
+                if total_time_sec is None:
+                    raise ValueError("totalTime missing in TMAP response")
+                duration_min = max(1, round(total_time_sec / 60))
+                toll_fare = total_fare if total_fare is not None else 0
+                return {
+                    "success": True,
+                    "is_live": True,
+                    "message": "🟢 TMAP 자동차 경로 안내 연동 완료",
+                    "data": {
+                        "duration_min": duration_min,
+                        "toll_fare": toll_fare,
+                    },
+                }
+            else:
+                return {
+                    "success": False,
+                    "is_live": False,
+                    "message": f"⚠️ TMAP API 오류 (status {response.status_code})",
+                    "data": None,
+                }
             
             if response.status_code == 200:
                 res_json = response.json()
@@ -153,47 +184,13 @@ async def get_commute_dashboard_info():
     traffic_status = "원활 (소통 원활)"
     traffic_color = "emerald"
     
-    # 2. 네이버 API 응답 JSON 파싱: 반드시 route['traoptimal'][0]['summary']에서 distance, duration, tollFare 추출
+    # 2. API 응답 파싱: TMAP 결과는 data에 duration_min 및 toll_fare 를 포함합니다.
     if is_live and api_data:
-        try:
-            route_dict = api_data.get("route", {})
-            # Prefer trafast (real-time fast) route since we forced waypoints
-            if "trafast" in route_dict and len(route_dict["trafast"]) > 0:
-                summary = route_dict["trafast"][0].get("summary", {})
-            elif "traoptimal" in route_dict and len(route_dict["traoptimal"]) > 0:
-                summary = route_dict["traoptimal"][0].get("summary", {})
-            else:
-                summary = {}
-            # duration (ms -> min)
-            if "duration" in summary:
-                duration_min = max(1, round(summary["duration"] / 60000))
-            # distance (m -> km)
-            if "distance" in summary:
-                distance_km = round(summary["distance"] / 1000, 1)
-            # tollFare (원)
-            if "tollFare" in summary:
-                toll_fare = summary["tollFare"]
-            # taxiFare & fuelPrice
-            if "taxiFare" in summary:
-                taxi_fare = summary["taxiFare"]
-            if "fuelPrice" in summary:
-                fuel_price = summary["fuelPrice"]
-            # traffic congestion evaluation
-            sections = route_dict.get("trafast", route_dict.get("traoptimal", []))
-            if sections:
-                sections = sections[0].get("section", [])
-                congested_count = sum(1 for s in sections if s.get("congestion", 0) >= 3)
-                if congested_count >= 2:
-                    traffic_status = "혼잡 (정체 구간 발생)"
-                    traffic_color = "rose"
-                elif congested_count == 1:
-                    traffic_status = "서행 (소통 원활-서행)"
-                    traffic_color = "amber"
-                else:
-                    traffic_status = "원활 (정체 없음)"
-                    traffic_color = "emerald"
-        except Exception as err:
-            print("Naver API Parsing Warning:", err)
+        # TMAP 반환 형식 사용
+        if isinstance(api_data, dict):
+            duration_min = api_data.get("duration_min", duration_min)
+            toll_fare = api_data.get("toll_fare", toll_fare)
+        # 기존 Naver 파싱 로직은 더 이상 필요 없습니다.
 
     estimated_arrival_dt = now + timedelta(minutes=duration_min)
     
