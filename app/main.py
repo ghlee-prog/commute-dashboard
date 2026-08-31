@@ -166,7 +166,7 @@ async def get_commute_dashboard_info():
     출발지(start): 127.2255,37.3663 (더샵오포센트리체 정문 인근)
     도착지(goal): 126.9688,37.3975 (안양메가밸리 입구)
     """
-    now = datetime.now()
+    now = datetime.now(ZoneInfo('Asia/Seoul'))
     
     # 1. 네이버 지도 API 실시간 호출 (option=traoptimal 고정)
     naver_result = await call_naver_direction5_api(START_COORDS, GOAL_COORDS)
