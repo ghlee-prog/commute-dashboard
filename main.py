@@ -5,17 +5,19 @@ NAVER_CLIENT_ID = "trcf5mo8a4"
 NAVER_CLIENT_SECRET = "4HLRLKltzNljArWBKfmQShKRD64roNJOKDwUxdHC"
 
 # 정확한 출발지 및 도착지 좌표 하드코딩 (경도,위도 / X,Y 형식)
-# 출발지: 경기 광주시 더샵오포센트리체 정문 인근 (127.2255, 37.3663)
-START_ADDRESS = "경기 광주시 더샵오포센트리체 (정문)"
+# 출발지: 경기 광주시 더샵오포센트리체 인근 (127.2255, 37.3663)
+START_ADDRESS = "경기 광주시 더샵오포센트리체"
 START_COORDS = "127.2255,37.3663"
 
-# 도착지: 경기 안양시 안양메가밸리 입구 (126.9688, 37.3975)
-GOAL_ADDRESS = "경기 안양시 안양메가밸리 (입구)"
+# 도착지: 경기 안양시 안양메가밸리 (126.9688, 37.3975)
+GOAL_ADDRESS = "경기 안양시 안양메가밸리"
 GOAL_COORDS = "126.9688,37.3975"
 
 import os
+import logging
 from pathlib import Path
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Optional, Dict, Any, List
 
 import httpx
@@ -61,71 +63,107 @@ app.include_router(checklist.router)
 # 네이버 지도 Direction5 API 호출 및 교통상황 연동 로직 (option=traoptimal 고정)
 # ==============================================================================
 async def call_naver_direction5_api(
-    start: str = START_COORDS, 
-    goal: str = GOAL_COORDS
+    start: str = START_COORDS,
+    goal: str = GOAL_COORDS,
 ) -> Dict[str, Any]:
     """
     네이버 클라우드 플랫폼 Direction5 API를 호출합니다.
-    URL 파라미터에 option=traoptimal(실시간 최적)을 고정으로 추가합니다.
+    URL 파라미터에 option=traffast(실시간 빠른길) 옵션을 추가합니다.
     """
-    if (not NAVER_CLIENT_ID or NAVER_CLIENT_ID.strip() in ("", "키입력") or 
+    if (not NAVER_CLIENT_ID or NAVER_CLIENT_ID.strip() in ("", "키입력") or
         not NAVER_CLIENT_SECRET or NAVER_CLIENT_SECRET.strip() in ("", "키입력")):
         return {
             "success": False,
             "is_live": False,
             "message": "⚠️ 네이버 지도 API 키가 설정되지 않았습니다.",
-            "data": None
+            "data": None,
         }
 
     headers = {
         "x-ncp-apigw-api-key-id": NAVER_CLIENT_ID.strip(),
-        "x-ncp-apigw-api-key": NAVER_CLIENT_SECRET.strip()
-    }
-    
-    # URL 파라미터: option=traoptimal 고정 및 waypoints 추가 (오포IC 포천방향 진입)
-    params = {
-        "start": start,
-        "waypoints": "127.2305,37.3635",
-        "goal": goal,
-        "option": "traoptimal"
+        "x-ncp-apigw-api-key": NAVER_CLIENT_SECRET.strip(),
     }
 
-    url = "https://naveropenapi.apigw.ntruss.com/map-direction/v5/driving"
-
+    # Naver Direction5 (real-time fast) API call
+    naver_url = f"https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving?start={start}&goal={goal}&option=traffast"
     try:
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            response = await client.get(url, headers=headers, params=params)
-            
-            if response.status_code == 200:
-                res_json = response.json()
-                if res_json.get("code") == 0:
-                    return {
-                        "success": True,
-                        "is_live": True,
-                        "message": "🟢 네이버 지도 Direction5 실시간 최적(traoptimal) 연동 완료",
-                        "data": res_json
-                    }
-            elif response.status_code in (401, 403):
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            naver_resp = await client.get(naver_url, headers=headers)
+            if naver_resp.status_code == 200:
+                naver_json = naver_resp.json()
+                total_seconds = naver_json.get("route", {}).get("traoptimal", [{}])[0].get("summary", {}).get("duration")
+                if total_seconds is None:
+                    total_seconds = naver_json.get("route", {}).get("traffast", [{}])[0].get("summary", {}).get("duration")
+                if total_seconds is None:
+                    raise ValueError("duration missing in Naver response")
+                duration_min = max(1, round(total_seconds / 60))
+            else:
+                logging.error(f"Naver Direction API error {naver_resp.status_code}: {naver_resp.text}")
                 return {
                     "success": False,
                     "is_live": False,
-                    "message": "⚠️ 네이버 지도 API 인증 대기 (기본 실시간 최적 경로 제공)",
-                    "data": None
+                    "message": f"⚠️ 네이버 지도 API 오류 (status {naver_resp.status_code})",
+                    "data": None,
                 }
-
-            return {
-                "success": False,
-                "is_live": False,
-                "message": f"⚠️ 네이버 지도 API 응답 오류 (상태코드 {response.status_code})",
-                "data": None
-            }
     except Exception as e:
+        logging.error(f"Naver Direction API exception: {e}")
         return {
             "success": False,
             "is_live": False,
             "message": f"⚠️ 네이버 지도 API 통신 예외 ({str(e)})",
-            "data": None
+            "data": None,
         }
+
+    # TMAP 자동차 경로 안내 API 호출 (통행료만)
+    wp_lon, wp_lat = 127.2307, 37.3636
+    tmap_url = "https://apis.openapi.sk.com/tmap/routes?version=1"
+    tmap_headers = {
+        "appKey": "YYpRf6pN1E49SVLkEuXuLJmHTKpt0h05wqOM6vI4",
+        "Content-Type": "application/json",
+    }
+    body = {
+        "startX": float(start.split(',')[0]),
+        "startY": float(start.split(',')[1]),
+        "endX": float(goal.split(',')[0]),
+        "endY": float(goal.split(',')[1]),
+        "passList": f"{wp_lon},{wp_lat}",
+        "reqCoordType": "WGS84GEO",
+        "resCoordType": "WGS84GEO",
+        "searchOption": 0,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            tmap_resp = await client.post(tmap_url, headers=tmap_headers, json=body)
+            if tmap_resp.status_code == 200:
+                tmap_json = tmap_resp.json()
+                total_fare = tmap_json.get("totalFare")
+                toll_fare = total_fare if total_fare is not None else 0
+            else:
+                logging.error(f"TMAP API error {tmap_resp.status_code}: {tmap_resp.text}")
+                return {
+                    "success": False,
+                    "is_live": False,
+                    "message": f"⚠️ TMAP API 오류 (status {tmap_resp.status_code})",
+                    "data": None,
+                }
+    except Exception as e:
+        logging.error(f"TMAP API exception: {e}")
+        return {
+            "success": False,
+            "is_live": False,
+            "message": f"⚠️ TMAP API 통신 예외 ({str(e)})",
+            "data": None,
+        }
+
+    return {
+        "success": True,
+        "is_live": True,
+        "message": "🟢 네이버 지도 Direction5 (traffast) 및 TMAP 연동 완료",
+        "data": {
+            "duration_min": duration_min,
+            "toll_fare": toll_fare,
+        },
+    }
 
 
 @app.get("/api/commute", response_model=CommuteResponse, tags=["commute"])
@@ -135,7 +173,7 @@ async def get_commute_dashboard_info():
     출발지(start): 127.2255,37.3663 (더샵오포센트리체 정문 인근)
     도착지(goal): 126.9688,37.3975 (안양메가밸리 입구)
     """
-    now = datetime.now()
+    now = datetime.now(ZoneInfo('Asia/Seoul'))
     
     # 1. 네이버 지도 API 실시간 호출 (option=traoptimal 고정)
     naver_result = await call_naver_direction5_api(START_COORDS, GOAL_COORDS)
@@ -145,7 +183,8 @@ async def get_commute_dashboard_info():
     api_data = naver_result.get("data")
     
     # 기본 경로 파라미터 (오포IC → 세종포천고속도로 본선 → 광남IC, 약 33km, 통행료 2,300원, 예상 소요시간 31~33분)
-    duration_min = 32
+    # Set default duration to None; will be populated from real-time API response
+    duration_min = None
     distance_km = 33.0
     toll_fare = 2300
     taxi_fare = 33500
@@ -153,47 +192,13 @@ async def get_commute_dashboard_info():
     traffic_status = "원활 (소통 원활)"
     traffic_color = "emerald"
     
-    # 2. 네이버 API 응답 JSON 파싱: 반드시 route['traoptimal'][0]['summary']에서 distance, duration, tollFare 추출
+    # 2. API 응답 파싱: TMAP 결과는 data에 duration_min 및 toll_fare 를 포함합니다.
     if is_live and api_data:
-        try:
-            route_dict = api_data.get("route", {})
-            # Prefer trafast (real-time fast) route since we forced waypoints
-            if "trafast" in route_dict and len(route_dict["trafast"]) > 0:
-                summary = route_dict["trafast"][0].get("summary", {})
-            elif "traoptimal" in route_dict and len(route_dict["traoptimal"]) > 0:
-                summary = route_dict["traoptimal"][0].get("summary", {})
-            else:
-                summary = {}
-            # duration (ms -> min)
-            if "duration" in summary:
-                duration_min = max(1, round(summary["duration"] / 60000))
-            # distance (m -> km)
-            if "distance" in summary:
-                distance_km = round(summary["distance"] / 1000, 1)
-            # tollFare (원)
-            if "tollFare" in summary:
-                toll_fare = summary["tollFare"]
-            # taxiFare & fuelPrice
-            if "taxiFare" in summary:
-                taxi_fare = summary["taxiFare"]
-            if "fuelPrice" in summary:
-                fuel_price = summary["fuelPrice"]
-            # traffic congestion evaluation
-            sections = route_dict.get("trafast", route_dict.get("traoptimal", []))
-            if sections:
-                sections = sections[0].get("section", [])
-                congested_count = sum(1 for s in sections if s.get("congestion", 0) >= 3)
-                if congested_count >= 2:
-                    traffic_status = "혼잡 (정체 구간 발생)"
-                    traffic_color = "rose"
-                elif congested_count == 1:
-                    traffic_status = "서행 (소통 원활-서행)"
-                    traffic_color = "amber"
-                else:
-                    traffic_status = "원활 (정체 없음)"
-                    traffic_color = "emerald"
-        except Exception as err:
-            print("Naver API Parsing Warning:", err)
+        # TMAP 반환 형식 사용
+        if isinstance(api_data, dict):
+            duration_min = api_data.get("duration_min", duration_min)
+            toll_fare = api_data.get("toll_fare", toll_fare)
+        # 기존 Naver 파싱 로직은 더 이상 필요 없습니다.
 
     estimated_arrival_dt = now + timedelta(minutes=duration_min)
     
