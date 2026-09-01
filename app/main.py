@@ -18,25 +18,55 @@ import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from typing import Optional, Dict, Any, List
 
-import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
-from app.models import (
-    CommuteResponse, 
-    CommuteRoute, 
-    TransitSegment,
-    WeatherResponse
-)
-from app.routers import weather, smarthome, checklist
+# Settings placeholder
+class Settings:
+    app_title = "Commute Dashboard"
+    target_arrival_time = "09:00"
+
+settings = Settings()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
+
+app = FastAPI(
+    title=settings.app_title,
+    version="1.0.0",
+    description="Simple FastAPI app serving static commute dashboard"
+)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount static files
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    index_file = STATIC_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return HTMLResponse("<h1>Commute Dashboard Initializing...</h1>")
+
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "app": settings.app_title,
+        "version": "1.0.0"
+    }
 
 app = FastAPI(
     title=settings.app_title,
@@ -146,24 +176,6 @@ async def call_naver_direction5_api(
             if tmap_resp.status_code == 200:
                 tmap_json = tmap_resp.json()
                 total_fare = tmap_json.get("totalFare")
-                toll_fare = total_fare if total_fare is not None else 0
-            else:
-                logging.error(f"TMAP API error {tmap_resp.status_code}: {tmap_resp.text}")
-                return {
-                    "success": False,
-    # Simple static response without external API calls
-    now = datetime.now(ZoneInfo('Asia/Seoul'))
-    origin = START_ADDRESS
-    destination = GOAL_ADDRESS
-    # Fixed placeholder values
-    duration_min = 30
-    distance_km = 33.0
-    toll_fare = 2300
-    taxi_fare = 33500
-    fuel_price = 4100
-    traffic_status = "원활"
-    traffic_color = "emerald"
-    estimated_arrival_dt = now + timedelta(minutes=duration_min)
     route_static = CommuteRoute(
         id="route_static",
         name="정적 경로",
