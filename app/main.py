@@ -151,28 +151,51 @@ async def call_naver_direction5_api(
                 logging.error(f"TMAP API error {tmap_resp.status_code}: {tmap_resp.text}")
                 return {
                     "success": False,
-                    "is_live": False,
-                    "message": f"⚠️ TMAP API 오류 (status {tmap_resp.status_code})",
-                    "data": None,
-                }
-    except Exception as e:
-        logging.error(f"TMAP API exception: {e}")
-        return {
-            "success": False,
-            "is_live": False,
-            "message": f"⚠️ TMAP API 통신 예외 ({str(e)})",
-            "data": None,
-        }
-
-    return {
-        "success": True,
-        "is_live": True,
-        "message": "🟢 네이버 지도 Direction5 (traffast) 및 TMAP 연동 완료",
-        "data": {
-            "distance_km": distance_km,
-            "toll_fare": toll_fare,
-        },
-    }
+    # Simple static response without external API calls
+    now = datetime.now(ZoneInfo('Asia/Seoul'))
+    origin = START_ADDRESS
+    destination = GOAL_ADDRESS
+    # Fixed placeholder values
+    duration_min = 30
+    distance_km = 33.0
+    toll_fare = 2300
+    taxi_fare = 33500
+    fuel_price = 4100
+    traffic_status = "원활"
+    traffic_color = "emerald"
+    estimated_arrival_dt = now + timedelta(minutes=duration_min)
+    route_static = CommuteRoute(
+        id="route_static",
+        name="정적 경로",
+        mode="car",
+        total_duration_min=duration_min,
+        distance_km=distance_km,
+        traffic_status=traffic_status,
+        traffic_color=traffic_color,
+        departure_time=now.strftime("%H:%M"),
+        estimated_arrival_time=estimated_arrival_dt.strftime("%H:%M"),
+        recommended=False,
+        next_arrival_seconds=0,
+        next_arrival_text=f"거리 {distance_km}km · 통행료 {toll_fare:,}원",
+        toll_fare=toll_fare,
+        taxi_fare=taxi_fare,
+        fuel_price=fuel_price,
+        segments=[]
+    )
+    return CommuteResponse(
+        origin=origin,
+        destination=destination,
+        origin_coords=START_COORDS,
+        destination_coords=GOAL_COORDS,
+        target_time=settings.target_arrival_time,
+        recommended_departure_time=now.strftime("%H:%M"),
+        traffic_engine="스마트폰 앱 직연동",
+        is_naver_api_active=False,
+        naver_status_message="앱 직연동 사용",
+        routes=[route_static],
+        live_traffic_alert="",
+        updated_at=now.strftime("%H:%M:%S")
+    )
 
 
 @app.get("/api/commute", response_model=CommuteResponse, tags=["commute"])
