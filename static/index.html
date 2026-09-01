@@ -141,7 +141,7 @@
             <div id="commute-arrival-time" class="text-[11px] text-slate-400 pt-0.5">08:43 도착 예정 (지금 출발 시)</div>
           </div>
           <div class="text-right">
-            <div id="commute-main-duration" class="text-3xl font-black text-white">38<span class="text-base font-normal text-slate-400 ml-0.5">분</span></div>
+            <div id="duration-time" class="text-3xl font-black text-white">38<span class="text-base font-normal text-slate-400 ml-0.5">분</span></div>
             <div id="commute-traffic-status" class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 mt-1">
               원활
             </div>
@@ -150,11 +150,11 @@
 
         <!-- Driving Cost & Distance Badges -->
         <div id="commute-metrics-grid" class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-800/80 text-center">
-<div id="total-distance" class="text-xs font-bold text-slate-200 mt-0.5"></div>
-          </div>
-          <div class="p-1.5 rounded-lg bg-slate-800/50">
-            <div class="text-[9px] text-slate-400">예상 통행료</div>
-            <div id="toll-fare" class="text-xs font-bold text-indigo-300 mt-0.5"></div>
+<div id="total-distance" class="text-xs font-bold text-slate-200 mt-0.5">33 km</div>
+            <div class="p-1.5 rounded-lg bg-slate-800/50">
+              <div class="text-[9px] text-slate-400">예상 통행료</div>
+              <div id="toll-fare" class="text-xs font-bold text-indigo-300 mt-0.5">2,300원</div>
+            </div>
           </div>
           <div class="p-1.5 rounded-lg bg-slate-800/50">
             <div class="text-[9px] text-slate-400">예상 택시비</div>
@@ -164,10 +164,8 @@
       </div>
 
                 <div class="mt-4 flex justify-center">
-          <a href="nmap://route/car?slat=37.3663&slng=127.2255&sname=집&v1lat=37.3636&v1lng=127.2307&v1name=오포IC&dlat=37.3975&dlng=126.9688&dname=회사&appname=CommuteDashboard"
-             class="w-full py-3 rounded-xl bg-[#03c75a] text-white font-bold text-lg text-center hover:bg-[#02b54f]">
-            네이버 지도 앱으로 경로 열기
-          </a>
+          <a href="nmap://route/car?slat=37.3663&slng=127.2255&sname=경기 광주시 더샵오포센트리체&dlat=37.3975&dlng=126.9688&dname=경기 안양시 안양메가밸리&appname=commute-dashboard" class="w-full py-3 rounded-xl bg-[#03c75a] text-white font-bold text-lg text-center hover:bg-[#02b54f]">네이버 지도 앱으로 경로 열기</a>
+<div class="mt-2 text-xs text-slate-400 text-center">앱이 없을 경우 <a href="https://map.naver.com/v5/directions/127.2255,37.3663,경기 광주시 더샵오포센트리체/126.9688,37.3975,경기 안양시 안양메가밸리/-/car" target="_blank" class="underline text-indigo-300">웹 지도 보기</a></div>
         </div>
     </section>
 
