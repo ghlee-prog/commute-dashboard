@@ -105,18 +105,15 @@ async def call_naver_direction5_api(
                     "message": f"⚠️ 네이버 지도 API 오류 (status {resp.status_code})",
                     "data": None,
                 }
-            data = resp.json()
-            # Extract duration in milliseconds from traffast
-            duration_ms = (
-                data.get("route", {})
-                .get("traffast", [{}])[0]
-                .get("summary", {})
-                .get("duration")
-            )
-            if duration_ms is None:
-                raise ValueError("duration missing in Naver traffast response")
-            # Convert milliseconds to minutes (rounded)
-            duration_min = max(1, round(duration_ms / 60000))
+            naver_json = resp.json()
+            total_seconds = naver_json.get("route", {}).get("traffast", [{}])[0].get("summary", {}).get("duration")
+            distance_m = naver_json.get("route", {}).get("traffast", [{}])[0].get("summary", {}).get("distance")
+            if total_seconds is None:
+                raise ValueError("duration missing in Naver response")
+            if distance_m is None:
+                raise ValueError("distance missing in Naver response")
+            duration_min = max(1, round(total_seconds / 60000))
+            distance_km = round(distance_m / 1000, 1)
     except Exception as e:
         logging.error(f"Naver Directions API exception: {e}")
         return {
@@ -172,7 +169,7 @@ async def call_naver_direction5_api(
         "is_live": True,
         "message": "🟢 네이버 지도 Direction5 (traffast) 및 TMAP 연동 완료",
         "data": {
-            "duration_min": duration_min,
+            "distance_km": distance_km,
             "toll_fare": toll_fare,
         },
     }
