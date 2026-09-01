@@ -67,11 +67,15 @@ async def call_naver_direction5_api(
     goal: str = GOAL_COORDS,
 ) -> Dict[str, Any]:
     """
-    네이버 클라우드 플랫폼 Direction5 API를 호출합니다.
-    URL 파라미터에 option=traffast(실시간 빠른길) 옵션을 추가합니다.
+    네이버 지도 Directions15 API를 호출합니다.
+    - endpoint: https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving
+    - 헤더: X-NCP-APIGW-API-KEY-ID, X-NCP-APIGW-API-KEY (환경변수에서 로드)
+    - 파라미터: start, goal, option=traffast (실시간 빠른길)
+    - 응답에서 route.traffast[0].summary.duration (밀리초) 를 추출해 분(min) 로 변환합니다.
     """
-    if (not NAVER_CLIENT_ID or NAVER_CLIENT_ID.strip() in ("", "키입력") or
-        not NAVER_CLIENT_SECRET or NAVER_CLIENT_SECRET.strip() in ("", "키입력")):
+    client_id = os.getenv("NAVER_CLIENT_ID", NAVER_CLIENT_ID)
+    client_secret = os.getenv("NAVER_CLIENT_SECRET", NAVER_CLIENT_SECRET)
+    if not client_id or not client_secret:
         return {
             "success": False,
             "is_live": False,
@@ -80,33 +84,41 @@ async def call_naver_direction5_api(
         }
 
     headers = {
-        "x-ncp-apigw-api-key-id": NAVER_CLIENT_ID.strip(),
-        "x-ncp-apigw-api-key": NAVER_CLIENT_SECRET.strip(),
+        "x-ncp-apigw-api-key-id": client_id.strip(),
+        "x-ncp-apigw-api-key": client_secret.strip(),
     }
 
-    # Naver Direction5 (real-time fast) API call
-    naver_url = f"https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving?start={start}&goal={goal}&option=traffast"
+    naver_url = (
+        f"https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving"
+        f"?start={start}&goal={goal}&option=traffast"
+    )
     try:
         async with httpx.AsyncClient(timeout=6.0) as client:
-            naver_resp = await client.get(naver_url, headers=headers)
-            if naver_resp.status_code == 200:
-                naver_json = naver_resp.json()
-                total_seconds = naver_json.get("route", {}).get("traoptimal", [{}])[0].get("summary", {}).get("duration")
-                if total_seconds is None:
-                    total_seconds = naver_json.get("route", {}).get("traffast", [{}])[0].get("summary", {}).get("duration")
-                if total_seconds is None:
-                    raise ValueError("duration missing in Naver response")
-                duration_min = max(1, round(total_seconds / 60))
-            else:
-                logging.error(f"Naver Direction API error {naver_resp.status_code}: {naver_resp.text}")
+            resp = await client.get(naver_url, headers=headers)
+            if resp.status_code != 200:
+                logging.error(
+                    f"Naver Directions API error {resp.status_code}: {resp.text}"
+                )
                 return {
                     "success": False,
                     "is_live": False,
-                    "message": f"⚠️ 네이버 지도 API 오류 (status {naver_resp.status_code})",
+                    "message": f"⚠️ 네이버 지도 API 오류 (status {resp.status_code})",
                     "data": None,
                 }
+            data = resp.json()
+            # Extract duration in milliseconds from traffast
+            duration_ms = (
+                data.get("route", {})
+                .get("traffast", [{}])[0]
+                .get("summary", {})
+                .get("duration")
+            )
+            if duration_ms is None:
+                raise ValueError("duration missing in Naver traffast response")
+            # Convert milliseconds to minutes (rounded)
+            duration_min = max(1, round(duration_ms / 60000))
     except Exception as e:
-        logging.error(f"Naver Direction API exception: {e}")
+        logging.error(f"Naver Directions API exception: {e}")
         return {
             "success": False,
             "is_live": False,
