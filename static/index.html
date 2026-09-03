@@ -1,87 +1,291 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출근 대시보드</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <title>출근 대시보드 - Morning Commute PWA</title>
+  
+  <!-- Viewport & Apple Safari PWA Meta Tags -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="출근 대시보드">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#080c14">
+
+  <!-- PWA Manifest & Favicon / Apple Touch Icon -->
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/static/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/static/icons/icon-512.png">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/custom.css">
 </head>
-<body class="bg-[#0f172a] text-white min-h-screen flex justify-center p-4">
-    <div class="w-full max-w-md space-y-4">
-        
-        <!-- 시계 및 헤더 카드 -->
-        <div class="bg-[#1e293b] p-5 rounded-2xl shadow-lg border border-slate-700/50">
-            <div class="flex justify-between items-center text-slate-400 text-sm mb-1">
-                <span id="current-date">--월 --일 (-)</span>
-                <button onclick="location.reload()" class="hover:text-white"><i class="fa-solid fa-rotate-right"></i></button>
-            </div>
-            <div id="current-time" class="text-4xl font-black tracking-tight my-1 text-white">00:00:00</div>
-            <p class="text-xs text-slate-300 font-medium">오늘 하루도 힘내세요! 안전 운전하세요 🚗</p>
+<body class="bg-[#080c14] text-slate-100 antialiased selection:bg-indigo-500 selection:text-white pb-12">
+
+  <!-- Floating Toast Notification -->
+  <div id="toast-notification" class="toast-slide toast-hidden">
+    <div id="toast-icon"></div>
+    <span id="toast-message">알림 메시지</span>
+  </div>
+
+  <!-- Main Mobile Container (Centered on desktop, full-width on iPhone) -->
+  <main class="max-w-md mx-auto px-4 space-y-4 pt-2">
+
+    <!-- PWA Install Banner for Safari Users -->
+    <div id="pwa-install-banner" class="hidden mb-2 p-3 rounded-2xl bg-indigo-950/70 border border-indigo-500/30 flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-sm shadow-md">📱</div>
+        <div>
+          <div class="text-xs font-bold text-white">아이폰 홈 화면에 추가하기</div>
+          <div class="text-[10px] text-indigo-300">Safari 공유 버튼 ➔ '홈 화면에 추가'</div>
         </div>
-
-        <!-- 단일 출근길 경로 카드 -->
-        <div class="bg-[#1e293b] p-5 rounded-2xl shadow-lg border border-slate-700/50 space-y-4">
-            <div class="flex items-center space-x-2">
-                <span class="text-xl">🚘</span>
-                <h2 class="text-lg font-bold text-white">출근길 경로</h2>
-            </div>
-
-            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                <div class="flex items-center space-x-2 text-sm">
-                    <span class="bg-indigo-600/80 text-indigo-100 text-xs px-2 py-0.5 rounded font-bold">출발</span>
-                    <span class="text-slate-200 font-medium">경기 광주시 더샵오포센트리체</span>
-                </div>
-                <div class="flex items-center space-x-2 text-sm">
-                    <span class="bg-teal-600/80 text-teal-100 text-xs px-2 py-0.5 rounded font-bold">도착</span>
-                    <span class="text-slate-200 font-medium">경기 안양시 안양메가밸리</span>
-                </div>
-            </div>
-
-            <a href="nmap://route/car?slat=37.3663&slng=127.2255&sname=경기 광주시 더샵오포센트리체&dlat=37.3975&dlng=126.9688&dname=경기 안양시 안양메가밸리&appname=commute-dashboard"
-               class="block w-full text-center py-3.5 bg-[#00c73c] hover:bg-[#00b035] text-white font-bold text-lg rounded-xl shadow-md transition-all">
-                네이버 지도 앱으로 경로 열기
-            </a>
-        </div>
-
-        <!-- 오늘 날씨 카드 -->
-        <div class="bg-[#1e293b] p-5 rounded-2xl shadow-lg border border-slate-700/50 space-y-4">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <span class="text-xl">🌤️</span>
-                    <h2 class="text-lg font-bold text-white">오늘 날씨 · 경기 광주시</h2>
-                </div>
-            </div>
-
-            <div class="flex justify-between items-center py-2">
-                <div>
-                    <div class="text-4xl font-extrabold text-white">24°C</div>
-                    <div class="text-xs text-slate-400 mt-1">구름 조금 · 체감 28°C</div>
-                </div>
-            </div>
-
-            <a href="https://m.search.naver.com/search.naver?query=경기+광주시+날씨" 
-               target="_blank"
-               class="block w-full text-center py-3.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-lg rounded-xl shadow-md transition-all">
-                네이버 날씨에서 상세 예보 보기
-            </a>
-        </div>
-
+      </div>
+      <button onclick="openPWAGuide()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold btn-tactile">
+        방법 보기
+      </button>
     </div>
 
-    <script>
-        function updateClock() {
-            const now = new Date();
-            const days = ['일', '월', '화', '수', '목', '금', '토'];
-            const month = now.getMonth() + 1;
-            const date = now.getDate();
-            const day = days[now.getDay()];
-            
-            document.getElementById('current-date').innerText = `${month}월 ${date}일 (${day})`;
-            document.getElementById('current-time').innerText = now.toTimeString().split(' ')[0];
+    <!-- Header: Live Time & Greeting -->
+    <header class="glass-card rounded-3xl p-5 relative overflow-hidden">
+      <!-- Background Ambient Glow -->
+      <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-sky-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="flex items-start justify-between relative z-10">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span id="current-date-text" class="text-xs font-medium text-slate-400">8월 29일 (토)</span>
+          </div>
+          <div id="current-time-text" class="text-4xl font-extrabold tracking-tight text-white mt-0.5">07:45:00</div>
+          <p id="greeting-text" class="text-xs font-medium text-indigo-300 mt-1.5 flex items-center gap-1">
+            좋은 아침입니다! 광주 ➔ 안양 안전운전 하세요 ☀️
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Refresh Button -->
+          <button onclick="refreshDashboard(true)" title="새로고침"
+            class="w-10 h-10 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white active:bg-slate-700 btn-tactile shadow-md">
+            <svg id="refresh-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+          <!-- Info Button -->
+          <button onclick="openPWAGuide()" title="앱 정보"
+            class="w-10 h-10 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white active:bg-slate-700 btn-tactile shadow-md">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <section class="glass-card rounded-3xl p-5 space-y-3.5 relative overflow-hidden">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-sm border border-emerald-500/30">🚗</div>
+      <h2 class="text-sm font-bold text-slate-200">🚘 출근길 경로</h2>
+    </div>
+  </div>
+  <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-950/40 to-slate-900/80 border border-indigo-500/20 space-y-3">
+    <div class="flex items-start justify-between">
+      <div class="space-y-1">
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900/70 text-indigo-200 font-bold">출발</span>
+          <span class="text-xs font-semibold text-slate-200">경기 광주시 더샵오포센트리체</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-900/70 text-sky-200 font-bold">도착</span>
+          <span class="text-xs font-semibold text-slate-200">경기 안양시 안양메가밸리</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-4 flex justify-center">
+    <a href="nmap://route/car?slat=37.3663&slng=127.2255&sname=경기 광주시 더샵오포센트리체&dlat=37.3975&dlng=126.9688&dname=경기 안양시 안양메가밸리&appname=commute-dashboard"
+       class="w-full py-3 rounded-xl bg-[#03c75a] text-white font-bold text-lg text-center hover:bg-[#02b54f]">
+      네이버 지도 앱으로 경로 열기
+    </a>
+  </div>
+</section>
+
+    <!-- CARD: 엘리베이터 호출 -->
+    <section class="glass-card rounded-3xl p-5 space-y-3.5 relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center text-sm border border-purple-500/30">🛗</div>
+          <h2 class="text-sm font-bold text-slate-200">🛗 엘리베이터 호출</h2>
+        </div>
+      </div>
+      <div class="mt-2 flex justify-center">
+        <button id="btn-call-elevator" onclick="callElevator()"
+                class="w-full py-3.5 rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] active:bg-[#5b21b6] text-white font-bold text-lg text-center shadow-lg transition-all btn-tactile">
+          우리집 엘리베이터 부르기
+        </button>
+      </div>
+    </section>
+
+    <!-- CARD 2: 오늘 날씨 (Weather Card - Open-Meteo 실시간 연동) -->
+    <section class="glass-card rounded-3xl p-5 space-y-3.5 relative overflow-hidden">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-sm border border-amber-500/30">🌤️</div>
+          <h2 id="weather-location-header" class="text-sm font-bold text-slate-200">오늘 날씨 · 경기도 광주시</h2>
+        </div>
+        <div id="umbrella-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+          <span>🌂</span> 우산 불필요
+        </div>
+      </div>
+
+      <!-- Temperature & Condition -->
+      <div class="flex items-baseline justify-between pt-1">
+        <div>
+          <div id="weather-temp" class="text-5xl font-black tracking-tight text-white">24<span class="text-3xl text-slate-400 font-light">°C</span></div>
+          <div id="weather-condition" class="text-xs font-semibold text-slate-300 mt-1">구름 조금 · 체감 28°C</div>
+        </div>
+        <div class="text-right space-y-1">
+          <div id="pm10-badge" class="px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 inline-block">미세 26 ㎍ (좋음)</div>
+          <div></div>
+          <div id="pm25-badge" class="px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 inline-block">초미세 12 ㎍ (좋음)</div>
+        </div>
+      </div>
+
+      <!-- Outfit tip -->
+      <div class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300 flex items-center gap-2">
+        <span class="text-base">👔</span>
+        <span id="weather-outfit-tip" class="flex-1 text-[11px] leading-tight">활동하기 쾌적한 날씨입니다. 가벼운 옷차림을 추천합니다.</span>
+      </div>
+
+        <!-- Naver Weather Detail Button -->
+        <div class="mt-4 w-full">
+          <a href="https://m.search.naver.com/search.naver?query=경기도+광주시+날씨"
+             target="_blank"
+              class="block w-full text-center py-3.5 bg-[#2563eb] text-white font-bold text-lg rounded-xl shadow-md">
+            네이버 날씨에서 상세 예보 보기
+          </a>
+        </div>
+    </section>
+
+    <!-- Footer Note -->
+    <footer class="text-center text-[11px] text-slate-500 py-4 space-y-1">
+      <div>출근 대시보드 v1.1.0 · PWA for iOS Safari</div>
+      <div class="text-slate-600">FastAPI · 네이버 지도 Direction5 · Open-Meteo 연동</div>
+    </footer>
+
+  </main>
+
+  <!-- iOS PWA Add to Home Screen Tutorial Modal -->
+  <div id="pwa-guide-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-backdrop">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-indigo-600 flex items-center justify-center text-lg">📲</div>
+          <div>
+            <h3 class="text-sm font-bold text-white">아이폰 홈 화면 추가 가이드</h3>
+            <p class="text-[11px] text-slate-400">앱처럼 전체 화면으로 사용하는 방법</p>
+          </div>
+        </div>
+        <button onclick="closePWAGuide()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-sm">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-300">
+        <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700">
+          <div class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center flex-shrink-0">1</div>
+          <div>
+            <div class="font-bold text-white">아이폰 Safari 하단 공유 버튼 탭</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">화면 하단 가운데의 네모+화살표(공유) 아이콘을 터치합니다.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700">
+          <div class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 font-bold flex items-center justify-center flex-shrink-0">2</div>
+          <div>
+            <div class="font-bold text-white">'홈 화면에 추가' 선택</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">메뉴 목록에서 <strong>[홈 화면에 추가]</strong>를 누른 후 우측 상단 [추가]를 완료합니다.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-800/60 border border-slate-700">
+          <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 font-bold flex items-center justify-center flex-shrink-0">3</div>
+          <div>
+            <div class="font-bold text-white">홈 화면 앱 아이콘으로 실행</div>
+            <p class="text-[11px] text-slate-400 mt-0.5">주소창 없는 깔끔한 네이티브 앱 풀스크린 모드로 대시보드를 사용할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="closePWAGuide()" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs btn-tactile shadow-lg shadow-indigo-600/30">
+        확인했습니다
+      </button>
+    </div>
+  </div>
+
+  <!-- Main JavaScript Logic -->
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function callElevator() {
+      const btn = document.getElementById('btn-call-elevator');
+      if (!btn || btn.disabled) return;
+
+      const originalText = '우리집 엘리베이터 부르기';
+      btn.disabled = true;
+      btn.textContent = '호출 중...';
+
+      try {
+        const res = await fetch('/api/elevator', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          btn.textContent = '도착 완료! 🚀';
+          if (typeof showToast === 'function') {
+            showToast('엘리베이터가 호출되었습니다! 🛗', 'success');
+          }
+        } else {
+          btn.textContent = '호출 실패 ⚠️';
+          if (typeof showToast === 'function') {
+            showToast(data.message || '엘리베이터 호출에 실패했습니다.', 'warning');
+          }
         }
-        setInterval(updateClock, 1000);
-        updateClock();
-    </script>
+      } catch (err) {
+        console.error('Elevator call error:', err);
+        btn.textContent = '통신 오류 ⚠️';
+        if (typeof showToast === 'function') {
+          showToast('서버 통신 오류가 발생했습니다.', 'warning');
+        }
+      } finally {
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }, 3000);
+      }
+    }
+  </script>
 </body>
 </html>
